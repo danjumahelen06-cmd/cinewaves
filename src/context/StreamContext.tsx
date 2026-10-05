@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { Movie, TVShow, MediaItem, WatchlistItem, FavoriteItem, WatchHistoryItem, Episode } from '../types';
 import { INITIAL_MOVIES, INITIAL_TV_SHOWS } from '../lib/sampleData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { fetchTrendingMovies, fetchTrendingShows, fetchVideos } from '../lib/tmdb';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 
@@ -172,6 +173,45 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   useEffect(() => {
     localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(watchHistory));
   }, [watchHistory]);
+
+  // Fetch real content from TMDB with trailers
+  useEffect(() => {
+    let isMounted = true;
+    async function loadLiveTmdbFeed() {
+      try {
+        const [tmdbMovies, tmdbShows] = await Promise.all([
+          fetchTrendingMovies(),
+          fetchTrendingShows(),
+        ]);
+
+        if (isMounted) {
+          if (tmdbMovies && tmdbMovies.length > 0) {
+            setMovies((prev) => {
+              const tmdbIds = new Set(tmdbMovies.map((m) => m.id));
+              const combined = [...tmdbMovies, ...prev.filter((m) => !tmdbIds.has(m.id))];
+              localStorage.setItem(LS_MOVIES_KEY, JSON.stringify(combined));
+              return combined;
+            });
+          }
+          if (tmdbShows && tmdbShows.length > 0) {
+            setTvShows((prev) => {
+              const tmdbIds = new Set(tmdbShows.map((s) => s.id));
+              const combined = [...tmdbShows, ...prev.filter((s) => !tmdbIds.has(s.id))];
+              localStorage.setItem(LS_TV_SHOWS_KEY, JSON.stringify(combined));
+              return combined;
+            });
+          }
+        }
+      } catch (err) {
+        console.error('TMDB live load warning:', err);
+      }
+    }
+
+    loadLiveTmdbFeed();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Fetch Supabase data if connected
   useEffect(() => {

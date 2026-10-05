@@ -9,6 +9,7 @@ import { SeasonSelector } from '../components/SeasonSelector';
 import { MovieCard } from '../components/MovieCard';
 import { Modal } from '../components/Modal';
 import { useStream } from '../context/StreamContext';
+import { isYouTubeUrl } from '../lib/tmdb';
 
 interface DetailsPageProps {
   media: MediaItem;
@@ -241,12 +242,22 @@ export const DetailsPage: React.FC<DetailsPageProps> = ({
         maxWidth="max-w-4xl"
       >
         <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
-          <video
-            src={trailerUrl}
-            controls
-            autoPlay
-            className="w-full h-full object-contain"
-          />
+          {isYouTubeUrl(trailerUrl) ? (
+            <iframe
+              src={trailerUrl}
+              title={`${media.title} Trailer`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="w-full h-full border-0"
+            />
+          ) : (
+            <video
+              src={trailerUrl}
+              controls
+              autoPlay
+              className="w-full h-full object-contain"
+            />
+          )}
         </div>
       </Modal>
     </div>

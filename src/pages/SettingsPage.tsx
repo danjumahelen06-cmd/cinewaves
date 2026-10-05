@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Settings, Database, Volume2, Monitor, Subtitles, ShieldCheck, Check } from 'lucide-react';
+import { Settings, Database, Volume2, Monitor, Subtitles, ShieldCheck, Check, Film } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isSupabaseConfigured, SUPABASE_STATUS } from '../lib/supabase';
+import { TMDB_API_KEY } from '../lib/tmdb';
 import { useToast } from '../context/ToastContext';
 
 interface SettingsPageProps {
@@ -131,6 +132,34 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSupabaseModal 
                 className="w-5 h-5 accent-cyan-500 rounded cursor-pointer"
               />
             </div>
+          </div>
+        </div>
+
+        {/* TMDB Video & Movie Database */}
+        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Film className="w-5 h-5 text-cyan-400" />
+              <div>
+                <h3 className="text-base font-bold text-white">TMDB Video & Trailer API</h3>
+                <p className="text-xs text-slate-400">
+                  Live movie data, official 1080p YouTube video trailers, backdrop artwork, and ratings
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Connected
+            </span>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs flex items-center justify-between">
+            <div>
+              <span className="text-slate-400">Active API Key: </span>
+              <span className="font-mono text-cyan-300">
+                {TMDB_API_KEY ? `${TMDB_API_KEY.slice(0, 6)}••••••••••••••••${TMDB_API_KEY.slice(-4)}` : 'Not Configured'}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-500">Live Trending & YouTube Video Streams</span>
           </div>
         </div>
 

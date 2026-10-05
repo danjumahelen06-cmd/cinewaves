@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { MediaItem, Episode } from '../types';
 import { useStream } from '../context/StreamContext';
+import { isYouTubeUrl } from '../lib/tmdb';
 
 interface VideoPlayerProps {
   media: MediaItem;
@@ -268,6 +269,66 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [volume, isPlaying, onBack]);
 
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
+  const isYouTube = isYouTubeUrl(videoUrl);
+
+  if (isYouTube) {
+    return (
+      <div
+        ref={containerRef}
+        className="relative w-full aspect-video max-h-[88vh] bg-black overflow-hidden select-none rounded-2xl shadow-2xl border border-slate-800"
+      >
+        {/* YouTube Video Embed */}
+        <iframe
+          src={videoUrl}
+          title={media.title}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+
+        {/* Top Floating Control Bar */}
+        <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between pointer-events-auto z-30">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                saveProgress();
+                onBack();
+              }}
+              className="p-2 rounded-full bg-black/70 hover:bg-slate-800 text-white backdrop-blur-md border border-slate-700/60 transition-colors cursor-pointer shadow-lg"
+              aria-label="Back to details"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h2 className="text-white font-bold text-base sm:text-lg font-display drop-shadow">
+                {media.title}
+              </h2>
+              {episode && (
+                <p className="text-xs text-cyan-400 font-medium">
+                  Episode {episode.episode_number}: {episode.title}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {nextEpisode && onPlayNextEpisode && (
+              <button
+                onClick={() => onPlayNextEpisode(nextEpisode)}
+                className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg transition-transform hover:scale-105 cursor-pointer"
+              >
+                <span>Next Episode</span>
+                <SkipForward className="w-4 h-4 fill-current" />
+              </button>
+            )}
+            <span className="hidden sm:inline-block px-2.5 py-1 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              TMDB 1080P HD
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
