@@ -9,7 +9,7 @@ import { SeasonSelector } from '../components/SeasonSelector';
 import { MovieCard } from '../components/MovieCard';
 import { Modal } from '../components/Modal';
 import { useStream } from '../context/StreamContext';
-import { isYouTubeUrl } from '../lib/tmdb';
+import { isYouTubeUrl, ensureMediaVideo } from '../lib/tmdb';
 
 interface DetailsPageProps {
   media: MediaItem;
@@ -26,6 +26,24 @@ export const DetailsPage: React.FC<DetailsPageProps> = ({
 }) => {
   const { movies, tvShows } = useStream();
   const [trailerModalOpen, setTrailerModalOpen] = useState(false);
+  const [currentTrailerUrl, setCurrentTrailerUrl] = useState<string>(
+    media.trailer_url ||
+    ('video_url' in media ? media.video_url : '') ||
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+  );
+
+  // Lazily resolve official YouTube trailer when details page opens
+  React.useEffect(() => {
+    let isMounted = true;
+    ensureMediaVideo(media).then((url) => {
+      if (isMounted && url) {
+        setCurrentTrailerUrl(url);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [media]);
 
   const isTv = media.type === 'tv' || 'seasons' in media;
   const seasons = isTv && 'seasons' in media ? media.seasons : [];
@@ -242,9 +260,9 @@ export const DetailsPage: React.FC<DetailsPageProps> = ({
         maxWidth="max-w-4xl"
       >
         <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
-          {isYouTubeUrl(trailerUrl) ? (
+          {isYouTubeUrl(currentTrailerUrl) ? (
             <iframe
-              src={trailerUrl}
+              src={currentTrailerUrl}
               title={`${media.title} Trailer`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
@@ -252,7 +270,7 @@ export const DetailsPage: React.FC<DetailsPageProps> = ({
             />
           ) : (
             <video
-              src={trailerUrl}
+              src={currentTrailerUrl}
               controls
               autoPlay
               className="w-full h-full object-contain"

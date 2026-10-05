@@ -11,6 +11,7 @@ interface AuthContextType {
   isSupabaseConnected: boolean;
   signIn: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, displayName: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (updates: Partial<Profile>) => Promise<boolean>;
@@ -250,6 +251,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { success: true };
   }, [showToast]);
 
+  const signInWithGoogle = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+        if (error) {
+          setIsLoading(false);
+          return { success: false, error: error.message };
+        }
+        return { success: true };
+      } catch (err: unknown) {
+        setIsLoading(false);
+        const msg = err instanceof Error ? err.message : 'Google authentication failed';
+        return { success: false, error: msg };
+      }
+    }
+
+    // Local / Sandbox mode: instantaneous Google account login
+    const googleProfile: Profile = {
+      id: 'usr_google_101',
+      email: 'danjumahelen06@gmail.com',
+      display_name: 'Helen Danjuma',
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      is_admin: true,
+      created_at: new Date().toISOString(),
+    };
+
+    const newUser = { id: googleProfile.id, email: googleProfile.email };
+    setUser(newUser);
+    setProfile(googleProfile);
+    localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(newUser));
+    localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(googleProfile));
+
+    setIsLoading(false);
+    showToast(`Signed in with Google as ${googleProfile.display_name}`, 'success');
+    return { success: true };
+  }, [showToast]);
+
   const signOut = useCallback(async () => {
     setIsLoading(true);
     if (isSupabaseConfigured && supabase) {
@@ -308,6 +353,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isSupabaseConnected: isSupabaseConfigured,
         signIn,
         signUp,
+        signInWithGoogle,
         signOut,
         resetPassword,
         updateProfile,

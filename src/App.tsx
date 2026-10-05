@@ -11,6 +11,7 @@ import { Navbar } from './components/Navbar';
 import { MobileNavigation } from './components/MobileNavigation';
 import { SupabaseSetupModal } from './components/SupabaseSetupModal';
 import { ActivePage, MediaItem } from './types';
+import { ensureMediaVideo } from './lib/tmdb';
 
 // Pages
 import { HomePage } from './pages/HomePage';
@@ -57,6 +58,25 @@ const AppContent: React.FC = () => {
     episodeId?: string,
     startSeconds = 0
   ) => {
+    // If not already a YouTube stream, attempt to fetch the official video in the background
+    ensureMediaVideo(media).then((resolvedUrl) => {
+      if (resolvedUrl) {
+        setPlayerConfig((prev) => {
+          if (prev && prev.media.id === media.id) {
+            const updated = { ...prev.media, trailer_url: resolvedUrl };
+            if ('video_url' in updated) {
+              (updated as any).video_url = resolvedUrl;
+            }
+            return {
+              ...prev,
+              media: updated as MediaItem,
+            };
+          }
+          return prev;
+        });
+      }
+    });
+
     setPlayerConfig({ media, episodeId, startSeconds });
     navigate('player');
   };
