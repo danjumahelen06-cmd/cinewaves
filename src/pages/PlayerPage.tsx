@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { MediaItem, Episode, ActivePage } from '../types';
 import { useStream } from '../context/StreamContext';
@@ -68,7 +69,24 @@ export const PlayerPage: React.FC<PlayerPageProps> = ({
   };
 
   return (
-    <div className="pt-20 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8 min-h-screen">
+    <div className="pt-8 sm:pt-10 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-6 min-h-screen">
+      {/* Top Header Navigation Bar */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 text-xs sm:text-sm font-semibold transition-all hover:border-cyan-500/50 cursor-pointer shadow-md"
+        >
+          <ArrowLeft className="w-4 h-4 text-cyan-400" />
+          <span>Back to Browse</span>
+        </button>
+
+        <div className="flex items-center gap-2.5">
+          <span className="hidden sm:inline-block text-xs text-slate-400 font-medium">Now Streaming:</span>
+          <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[180px] sm:max-w-md">{media.title}</span>
+          <RatingBadge rating={media.rating} size="sm" />
+        </div>
+      </div>
+
       {/* Player Section */}
       <VideoPlayer
         media={media}

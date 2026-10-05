@@ -19,16 +19,60 @@ export const MovieCard: React.FC<MovieCardProps> = ({
   className = '',
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const hoverTimeoutRef = React.useRef<number | null>(null);
+
   const isTv = media.type === 'tv' || 'seasons' in media;
   const mediaType = isTv ? 'tv' : 'movie';
+
+  const previewVideoUrl =
+    ('video_url' in media && media.video_url && !media.video_url.includes('commondatastorage') && !media.video_url.includes('youtube')
+      ? media.video_url
+      : '') ||
+    ('trailer_url' in media && media.trailer_url && !media.trailer_url.includes('commondatastorage') && !media.trailer_url.includes('youtube')
+      ? media.trailer_url
+      : '') ||
+    'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4';
+
+  const handleMouseEnter = () => {
+    hoverTimeoutRef.current = window.setTimeout(() => {
+      setIsHovered(true);
+    }, 400);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      window.clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsHovered(false);
+  };
 
   return (
     <div
       onClick={() => onSelect(media)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={`group relative rounded-xl overflow-hidden bg-slate-900 border border-slate-800/80 shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:border-cyan-500/40 hover:shadow-cyan-950/40 hover:shadow-2xl flex flex-col ${className}`}
     >
       {/* Poster Aspect Container (2:3) */}
       <div className="relative aspect-[2/3] w-full bg-slate-950 overflow-hidden">
+        {/* Live Hover Video Preview */}
+        {isHovered && (
+          <div className="absolute inset-0 z-10 bg-black animate-in fade-in duration-300">
+            <video
+              src={previewVideoUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2 right-2 z-20 px-1.5 py-0.5 rounded bg-cyan-500 text-slate-950 font-extrabold text-[9px] uppercase tracking-wider shadow">
+              Preview
+            </div>
+          </div>
+        )}
+
         {!imageError && media.poster_url ? (
           <img
             src={media.poster_url}

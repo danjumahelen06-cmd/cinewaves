@@ -34,15 +34,24 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   const runtimeDisplay = 'runtime' in current ? `${current.runtime} min` : `${(current.seasons?.length || 1)} Seasons`;
 
   return (
-    <div className="relative w-full h-[76vh] min-h-[520px] max-h-[760px] overflow-hidden bg-[#080a0f] select-none">
+    <div className="relative w-full h-[80vh] min-h-[560px] max-h-[780px] overflow-hidden bg-[#080a0f] select-none">
+      {/* Atmospheric Ambient Base */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-[#091122] via-[#070b14] to-[#020408]" />
+      <div className="absolute top-10 left-12 w-96 h-96 bg-cyan-500/15 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-20 right-20 w-80 h-80 bg-blue-600/10 rounded-full blur-[90px] pointer-events-none" />
+
       {/* Background Backdrop Image */}
       <div className="absolute inset-0">
         <img
           key={current.id}
-          src={current.backdrop_url || current.poster_url}
+          src={current.backdrop_url || current.poster_url || 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1600&q=80'}
           alt={current.title}
           loading="eager"
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src =
+              'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1600&q=80';
+          }}
           className="w-full h-full object-cover object-center transition-all duration-1000 transform scale-100 animate-in fade-in"
         />
 
@@ -50,13 +59,13 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         {/* Left-to-right gradient for desktop reading */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#080a0f] via-[#080a0f]/80 to-transparent w-full md:w-3/4" />
         {/* Bottom fade to seamlessly blend with content rows */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#080a0f] via-[#080a0f]/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#080a0f] via-[#080a0f]/30 to-transparent" />
         {/* Top vignette for navbar contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#080a0f]/90 via-transparent to-transparent h-32" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#080a0f]/80 via-transparent to-transparent h-28" />
       </div>
 
-      {/* Hero Content Container */}
-      <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-8 flex flex-col justify-end pb-12 sm:pb-16 z-10">
+      {/* Hero Content Container - Vertically Centered & Well-Spaced from Top */}
+      <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-8 flex flex-col justify-center pt-24 sm:pt-28 pb-12 z-10">
         <div className="max-w-2xl space-y-4">
           {/* Unboxed Clean Metadata Row */}
           <div className="flex items-center gap-2.5 text-xs sm:text-sm font-medium text-slate-300">

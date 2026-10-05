@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { Movie, TVShow, MediaItem, WatchlistItem, FavoriteItem, WatchHistoryItem, Episode } from '../types';
 import { INITIAL_MOVIES, INITIAL_TV_SHOWS } from '../lib/sampleData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { fetchTrendingMovies, fetchTrendingShows, fetchVideos } from '../lib/tmdb';
+import { fetchTrendingMovies, fetchTrendingShows } from '../lib/tmdb';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 
@@ -47,32 +47,55 @@ const LS_WATCHLIST_KEY = 'cinewave_watchlist_v2';
 const LS_FAVORITES_KEY = 'cinewave_favorites_v2';
 const LS_HISTORY_KEY = 'cinewave_history_v2';
 
+function cleanStreamUrl(url?: string, fallback = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_5MB.mp4'): string {
+  if (!url || url.includes('commondatastorage.googleapis.com') || url.includes('youtube.com') || url.includes('youtu.be')) {
+    return fallback;
+  }
+  return url;
+}
+
 export const StreamProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
 
   const [movies, setMovies] = useState<Movie[]>(() => {
     const saved = localStorage.getItem(LS_MOVIES_KEY);
+    let list = INITIAL_MOVIES;
     if (saved) {
       try {
-        return JSON.parse(saved);
+        list = JSON.parse(saved);
       } catch {
-        return INITIAL_MOVIES;
+        list = INITIAL_MOVIES;
       }
     }
-    return INITIAL_MOVIES;
+    return list.map((m) => ({
+      ...m,
+      video_url: cleanStreamUrl(m.video_url),
+      trailer_url: cleanStreamUrl(m.trailer_url),
+    }));
   });
 
   const [tvShows, setTvShows] = useState<TVShow[]>(() => {
     const saved = localStorage.getItem(LS_TV_SHOWS_KEY);
+    let list = INITIAL_TV_SHOWS;
     if (saved) {
       try {
-        return JSON.parse(saved);
+        list = JSON.parse(saved);
       } catch {
-        return INITIAL_TV_SHOWS;
+        list = INITIAL_TV_SHOWS;
       }
     }
-    return INITIAL_TV_SHOWS;
+    return list.map((s) => ({
+      ...s,
+      trailer_url: cleanStreamUrl(s.trailer_url),
+      seasons: (s.seasons || []).map((season) => ({
+        ...season,
+        episodes: (season.episodes || []).map((ep) => ({
+          ...ep,
+          video_url: cleanStreamUrl(ep.video_url),
+        })),
+      })),
+    }));
   });
 
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
@@ -124,9 +147,12 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const saved = localStorage.getItem(LS_HISTORY_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       } catch {
-        return [];
+        // fallback
       }
     }
     // Default continue watching seed items

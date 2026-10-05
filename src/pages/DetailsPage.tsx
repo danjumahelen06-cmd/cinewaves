@@ -9,7 +9,7 @@ import { SeasonSelector } from '../components/SeasonSelector';
 import { MovieCard } from '../components/MovieCard';
 import { Modal } from '../components/Modal';
 import { useStream } from '../context/StreamContext';
-import { isYouTubeUrl, ensureMediaVideo } from '../lib/tmdb';
+import { ensureMediaVideo } from '../lib/tmdb';
 
 interface DetailsPageProps {
   media: MediaItem;
@@ -26,17 +26,21 @@ export const DetailsPage: React.FC<DetailsPageProps> = ({
 }) => {
   const { movies, tvShows } = useStream();
   const [trailerModalOpen, setTrailerModalOpen] = useState(false);
-  const [currentTrailerUrl, setCurrentTrailerUrl] = useState<string>(
-    media.trailer_url ||
-    ('video_url' in media ? media.video_url : '') ||
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
-  );
+  const [currentTrailerUrl, setCurrentTrailerUrl] = useState<string>(() => {
+    const raw =
+      media.trailer_url ||
+      ('video_url' in media ? media.video_url : '') ||
+      'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_5MB.mp4';
+    return raw && !raw.includes('youtube.com') && !raw.includes('youtu.be') && !raw.includes('commondatastorage.googleapis.com')
+      ? raw
+      : 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_5MB.mp4';
+  });
 
-  // Lazily resolve official YouTube trailer when details page opens
+  // Lazily resolve official direct trailer when details page opens
   React.useEffect(() => {
     let isMounted = true;
     ensureMediaVideo(media).then((url) => {
-      if (isMounted && url) {
+      if (isMounted && url && !url.includes('youtube.com') && !url.includes('youtu.be')) {
         setCurrentTrailerUrl(url);
       }
     });
@@ -79,9 +83,14 @@ export const DetailsPage: React.FC<DetailsPageProps> = ({
     <div className="min-h-screen pb-24 text-slate-200">
       {/* Cinematic Header / Backdrop Banner */}
       <div className="relative w-full h-[65vh] min-h-[460px] max-h-[680px] bg-slate-950">
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#091122] via-[#070b14] to-[#020408]" />
         <img
-          src={media.backdrop_url || media.poster_url}
+          src={media.backdrop_url || media.poster_url || 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1600&q=80'}
           alt={media.title}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src =
+              'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1600&q=80';
+          }}
           className="w-full h-full object-cover object-center"
         />
 
@@ -260,22 +269,12 @@ export const DetailsPage: React.FC<DetailsPageProps> = ({
         maxWidth="max-w-4xl"
       >
         <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
-          {isYouTubeUrl(currentTrailerUrl) ? (
-            <iframe
-              src={currentTrailerUrl}
-              title={`${media.title} Trailer`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              className="w-full h-full border-0"
-            />
-          ) : (
-            <video
-              src={currentTrailerUrl}
-              controls
-              autoPlay
-              className="w-full h-full object-contain"
-            />
-          )}
+          <video
+            src={currentTrailerUrl}
+            controls
+            autoPlay
+            className="w-full h-full object-contain"
+          />
         </div>
       </Modal>
     </div>

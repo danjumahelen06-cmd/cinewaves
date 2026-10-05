@@ -15,12 +15,37 @@ export const ContinueWatchingCard: React.FC<ContinueWatchingCardProps> = ({
   onResume,
   onRemove,
 }) => {
+  const [isHovered, setIsHovered] = React.useState(false);
+  const hoverTimeoutRef = React.useRef<number | null>(null);
+
   const duration = historyItem.duration_seconds || (('runtime' in media ? media.runtime : 45) * 60);
   const progress = historyItem.progress_seconds || 0;
   const progressPercent = Math.min(100, Math.max(5, (progress / (duration || 1)) * 100));
 
   const remainingSeconds = Math.max(0, duration - progress);
   const remainingMinutes = Math.round(remainingSeconds / 60);
+
+  const previewVideoUrl =
+    ('video_url' in media && media.video_url && !media.video_url.includes('commondatastorage') && !media.video_url.includes('youtube')
+      ? media.video_url
+      : '') ||
+    ('trailer_url' in media && media.trailer_url && !media.trailer_url.includes('commondatastorage') && !media.trailer_url.includes('youtube')
+      ? media.trailer_url
+      : '') ||
+    'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4';
+
+  const handleMouseEnter = () => {
+    hoverTimeoutRef.current = window.setTimeout(() => {
+      setIsHovered(true);
+    }, 350);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      window.clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsHovered(false);
+  };
 
   // If this is a TV show, check episode title
   let episodeTitle = '';
@@ -37,10 +62,29 @@ export const ContinueWatchingCard: React.FC<ContinueWatchingCardProps> = ({
   return (
     <div
       onClick={() => onResume(media, historyItem.episode_id, progress)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className="group relative rounded-xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-cyan-500/40 transition-all duration-300 shadow-lg hover:shadow-cyan-950/40 hover:shadow-2xl cursor-pointer flex flex-col"
     >
       {/* 16:9 Backdrop Container */}
       <div className="relative aspect-[16/9] w-full bg-slate-950 overflow-hidden">
+        {/* Live Hover Video Preview */}
+        {isHovered && (
+          <div className="absolute inset-0 z-10 bg-black animate-in fade-in duration-300">
+            <video
+              src={previewVideoUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2 left-2 z-20 px-1.5 py-0.5 rounded bg-cyan-500 text-slate-950 font-extrabold text-[9px] uppercase tracking-wider shadow">
+              Preview
+            </div>
+          </div>
+        )}
+
         <img
           src={media.backdrop_url || media.poster_url}
           alt={media.title}

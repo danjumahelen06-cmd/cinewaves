@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { MediaItem, Episode } from '../types';
 import { useStream } from '../context/StreamContext';
-import { isYouTubeUrl } from '../lib/tmdb';
 
 interface VideoPlayerProps {
   media: MediaItem;
@@ -54,11 +53,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isBuffering, setIsBuffering] = useState(true);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
-  // Active video source
-  const videoUrl =
+  // Active direct video source (guaranteed direct stream, never YouTube)
+  const rawUrl =
     episode?.video_url ||
     ('video_url' in media ? media.video_url : '') ||
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4';
+    ('trailer_url' in media ? media.trailer_url : '') ||
+    '';
+
+  const videoUrl =
+    rawUrl &&
+    !rawUrl.includes('youtube.com') &&
+    !rawUrl.includes('youtu.be') &&
+    !rawUrl.includes('commondatastorage.googleapis.com')
+      ? rawUrl
+      : 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_5MB.mp4';
 
   const isTv = media.type === 'tv' || 'seasons' in media;
 
@@ -92,7 +100,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const togglePlay = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
-      videoRef.current.play().catch((err) => console.error('Play failed:', err));
+      videoRef.current.play().catch(() => {});
     } else {
       videoRef.current.pause();
     }
@@ -269,66 +277,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [volume, isPlaying, onBack]);
 
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
-  const isYouTube = isYouTubeUrl(videoUrl);
-
-  if (isYouTube) {
-    return (
-      <div
-        ref={containerRef}
-        className="relative w-full aspect-video max-h-[88vh] bg-black overflow-hidden select-none rounded-2xl shadow-2xl border border-slate-800"
-      >
-        {/* YouTube Video Embed */}
-        <iframe
-          src={videoUrl}
-          title={media.title}
-          className="w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-        />
-
-        {/* Top Floating Control Bar */}
-        <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between pointer-events-auto z-30">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                saveProgress();
-                onBack();
-              }}
-              className="p-2 rounded-full bg-black/70 hover:bg-slate-800 text-white backdrop-blur-md border border-slate-700/60 transition-colors cursor-pointer shadow-lg"
-              aria-label="Back to details"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h2 className="text-white font-bold text-base sm:text-lg font-display drop-shadow">
-                {media.title}
-              </h2>
-              {episode && (
-                <p className="text-xs text-cyan-400 font-medium">
-                  Episode {episode.episode_number}: {episode.title}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {nextEpisode && onPlayNextEpisode && (
-              <button
-                onClick={() => onPlayNextEpisode(nextEpisode)}
-                className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg transition-transform hover:scale-105 cursor-pointer"
-              >
-                <span>Next Episode</span>
-                <SkipForward className="w-4 h-4 fill-current" />
-              </button>
-            )}
-            <span className="hidden sm:inline-block px-2.5 py-1 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              TMDB 1080P HD
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -377,38 +325,50 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Top Bar Overlay: Back Button, Title, Quality Tag */}
+      {/* Top Bar Overlay: Back Button, Title, Quality Tag & Next Episode */}
       <div
-        className={`absolute top-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between transition-opacity duration-300 z-30 ${
-          showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        className={`absolute top-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-b from-black/95 via-black/60 to-transparent flex items-center justify-between transition-opacity duration-300 z-30 ${
+          showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => {
               saveProgress();
               onBack();
             }}
-            className="p-2 rounded-full bg-black/60 hover:bg-slate-800 text-white backdrop-blur-md border border-slate-700/60 transition-colors cursor-pointer"
+            className="p-2 sm:p-2.5 rounded-full bg-slate-900/90 hover:bg-cyan-500 hover:text-slate-950 text-white backdrop-blur-md border border-slate-700/80 transition-all shadow-xl cursor-pointer"
             aria-label="Back to details"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-white font-bold text-base sm:text-lg font-display drop-shadow">
-              {media.title}
+            <h2 className="text-white font-extrabold text-sm sm:text-lg font-display drop-shadow-lg flex items-center gap-2">
+              <span className="truncate max-w-[200px] sm:max-w-md">{media.title}</span>
+              <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-sans font-bold border border-cyan-500/30">
+                1080P HD
+              </span>
             </h2>
             {episode && (
-              <p className="text-xs text-cyan-400 font-medium">
+              <p className="text-xs sm:text-sm text-cyan-400 font-semibold drop-shadow">
                 Episode {episode.episode_number}: {episode.title}
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {nextEpisode && onPlayNextEpisode && (
+            <button
+              onClick={() => onPlayNextEpisode(nextEpisode)}
+              className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg transition-transform hover:scale-105 cursor-pointer"
+            >
+              <span>Next Ep</span>
+              <SkipForward className="w-3.5 h-3.5 fill-current" />
+            </button>
+          )}
           <span className="px-2.5 py-1 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-            4K UHD · DOLBY ATMOS
+            4K UHD · ATMOS
           </span>
         </div>
       </div>
